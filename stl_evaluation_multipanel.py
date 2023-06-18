@@ -1,12 +1,8 @@
 # ## Sound Transmission Loss (STL) Evaluation for Multipanel System
 
 # #### ---------------------------------------------------------------------------------------------------
-# 
+#
 # ### Libraries and Constants
-
-
-
-
 import numpy as np
 import pandas as pd
 import os
@@ -15,10 +11,6 @@ import acoustics as ac
 import cmath
 from scipy.optimize import fsolve, ridder
 import random
-
-
-
-
 
 # set constants
 _c_air = 343.3  #m/s at room temp of 20°C
@@ -55,6 +47,15 @@ class AcousticPanel:
     def __init__(self, thickness, elastic_modulus, density, poisson_ratio, damping_factor, height, width):
         """
         Initializes an AcousticPanel object with the given properties.
+
+        Args:
+        - thickness (float): the thickness of the acoustic panel in meters
+        - elastic_modulus (float): the elastic modulus of the material in the acoustic panel in pascals
+        - density (float): the density of the material in the acoustic panel in kilograms per cubic meter
+        - poisson_ratio (float): the Poisson's ratio of the material in the acoustic panel
+        - damping_factor (float): the damping factor of the material in the acoustic panel
+        - height (float): the height of the acoustic panel in meters
+        - width (float): the width of the acoustic panel in meters
         """
         self.height = height
         self.width = width
@@ -74,6 +75,9 @@ class AcousticPanel:
     def _calc_critical_frequency(self):
         """
         Calculates the critical frequency of the acoustic panel.
+
+        Returns:
+        - critical_frequency (float): the critical frequency of the acoustic panel
         """
         self.critical_frequency = (_c_air**2)/(2*np.pi) * np.sqrt(self.basis_wt/self.flexural_rigidity)
         return self.critical_frequency
@@ -81,6 +85,9 @@ class AcousticPanel:
     def _calc_fundamental_frequency(self):
         """
         Calculates the fundamental frequency of the acoustic panel.
+
+        Returns:
+        - fundamental_frequency (float): the fundamental frequency of the acoustic panel
         """
         area_harmonic_mean = 1/self.width**2 + 1/self.height**2
         self.fundamental_frequency = (np.pi/2) * np.sqrt(self.flexural_rigidity/self.basis_wt)
@@ -90,6 +97,9 @@ class AcousticPanel:
     def _calc_shear_frequency(self):
         """
         Calculates the shear modulus of the material in the acoustic panel.
+
+        Returns:
+        - shear_frequency (float): the shear frequency of the material in the acoustic panel
         """
         self._calc_critical_frequency()
         self.shear_frequency = (_c_air**2)*(1-self.poisson_ratio)
@@ -102,10 +112,10 @@ class AcousticPanel:
         Calculates transmission loss at a given frequency 
         
         Parameters:
-        - freq: frequency at which sound transmission loss is calculated
-        
+        - freq (float): frequency at which sound transmission loss is calculated
+
         Returns:
-        - tl: transmission loss value in dB
+        - tl (float): transmission loss value in dB
         """
         
         self._calc_critical_frequency()
@@ -137,10 +147,12 @@ class AcousticPanel:
 #                     print('shear dominates')
         elif freq >= self.critical_frequency:
             if freq == self.critical_frequency:
-                delta_f = ac.octave.upper_frequency(frequency=freq, fraction=3) -                 ac.octave.lower_frequency(frequency=freq, fraction=3)
+                delta_f = ac.octave.upper_frequency(frequency=freq, fraction=3) - \
+                ac.octave.lower_frequency(frequency=freq, fraction=3)
             else:
                 delta_f = freq - self.critical_frequency
-            tl = 20 * np.log10(w*self.basis_wt/(2 * _c_air * _rho_air)) +             10 * np.log10(2*self.damping_factor/np.pi * delta_f/self.critical_frequency)
+            tl = 20 * np.log10(w*self.basis_wt/(2 * _c_air * _rho_air)) +  \
+                       10 * np.log10(2*self.damping_factor/np.pi * delta_f/self.critical_frequency)
 
             if freq >= self.shear_frequency: #mass law minus 6dB
                 tl = tl_mass - 6
@@ -154,13 +166,12 @@ class AcousticPanel:
         Calculates the transmission loss values of the acoustic panel over a range of frequencies.
         
         Args:
-        min_freq (float): the minimum frequency of the range in Hertz
-        max_freq (float): the maximum frequency of the range in Hertz
-        
+        - frequency_range (list): a list containing the minimum and maximum frequencies of the range in Hertz
+
         Returns:
-        - tl_df: A dataframe 1/3rd octave frequencies in Hz and transmission loss values in dB.
-        """ 
-        
+        - tl_df (DataFrame): A dataframe with 1/3rd octave frequencies in Hz and transmission loss values in dB.
+        """
+
         """ Calculates a list of 1/3 octave frequencies between the given minimum and maximum frequencies. """
         if (len(frequency_range) > 2) or (len(frequency_range) < 1):
             min_freq = 20
@@ -179,8 +190,6 @@ class AcousticPanel:
             tl_df = pd.concat([tl_df, df])
         
         return tl_df
-
-
 
 class AbsorberPanel:
     """
@@ -216,6 +225,16 @@ class AbsorberPanel:
         """
         Initializes an AbsorberPanel object with the given properties.
 
+        Args:
+        - category (str): The category of the absorber panel.
+        - thickness (float): The thickness of the absorber panel in meters.
+        - density (float): The density of the absorber panel material in kg/m^3.
+        - air_flow_resistivity (float): The air flow resistivity of the absorber panel material in Ns/m^4.
+        - solid_density (float): The density of the solid material in the absorber panel in kg/m^3.
+        - solid_elastic_modulus (float): The elastic modulus of the solid material in the absorber panel in Pa.
+        - solid_poisson_ratio (float): The Poisson's ratio of the solid material in the absorber panel.
+        - damping_factor (float): The damping factor of the absorber panel.
+
         """
         self.category = category
         self.thickness = thickness
@@ -232,16 +251,12 @@ class AbsorberPanel:
         
     def tortuosity(self):
         """
-        Calculates Tortuosity based on 2012 Matyka and Ahmadi models
-        
-        Parameters:
-        -----------
-        porosity : float
-        
-        
+        Calculates the tortuosity of the absorber panel based on the 2012 Matyka and Ahmadi models.
+
         Returns:
         --------
-        tau : float
+        tau (float): The tortuosity of the absorber panel.
+
         """
         
         if self.category == "Air":
@@ -255,7 +270,21 @@ class AbsorberPanel:
 
     
     def _porous_poisson(self, *parameters):
-    
+        """
+        Helper function for calculating the elastic modulus of the absorber panel material.
+        It solves the equation for porous Poisson's ratio.
+
+        Args:
+        - parameters (tuple): A tuple containing the parameters required for the equation.
+
+
+
+        Returns:
+        --------
+        func (float): The result of the equation for porous Poisson's ratio.
+
+        """
+
         v_c, porosity, v_m = parameters
         _limit_v = 1/5
         
@@ -269,6 +298,15 @@ class AbsorberPanel:
     
     
     def elastic_modulus(self):
+        """
+        Calculates the elastic modulus and Poisson's ratio of the absorber panel material.
+
+        Returns:
+        --------
+        E_c (float): The elastic modulus of the absorber panel material.
+        v_c (float): The Poisson's ratio of the absorber panel material.
+
+        """
         _limit_v = 1/5
         _eps = 1e-6
 
@@ -287,7 +325,15 @@ class AbsorberPanel:
     
     
     def bulk_modulus(self):
-        
+        """
+        Calculates the bulk modulus of the absorber panel material.
+
+        Returns:
+        --------
+        K_c (float): The bulk modulus of the absorber panel material.
+
+        """
+
         if self.category == "Air":
             K_c = _rho_air * (_c_air ** 2)
         else:
@@ -306,18 +352,14 @@ class AbsorberPanel:
         
         Parameters:
         -----------
-        frequency : float
-            The frequency at which to calculate the Miki propagation constant.
+        frequency (float): The frequency at which to calculate the Miki propagation constant.
 
         Returns:
         --------
-        gamma : complex
-            The Miki propagation constant for the absorber panel at the given frequency.
-            
+        gamma (complex): The Miki propagation constant for the absorber panel at the given frequency.
+
         """
-        
-#         self._calculate_tortuosity()
-        
+
         omega = 2 * np.pi * frequency
         effective_resistivity = self.porosity * self.air_flow_resistivity/(self.tortuosity()**2)
         
@@ -334,14 +376,14 @@ class AbsorberPanel:
         
     def stl_at_frequency(self, freq):
         """
-        Calculates transmission loss at a given frequency using 
-        Fahy formula = 8.6 * alpha * d + 20 * np.log10(beta / k)
-        
+        Calculates the transmission loss at a given frequency using the Fahy formula.
+        TL = 8.6 * alpha * d + 20 * log10(beta / k)
+
         Parameters:
-        - freq: frequency at which sound transmission loss is calculated
-        
+        - freq (float): The frequency at which sound transmission loss is calculated.
+
         Returns:
-        - tl: transmission loss value in dB
+        - tl (float): The transmission loss value in dB.
         """
         
         if self.category == "Air":
@@ -378,8 +420,7 @@ class AbsorberPanel:
             max_freq = frequency_range[1]
         
         freq_bands = list(ac.bands.third(min_freq, max_freq))
-#         freq_bands = [f for f in freq_bands if f > _c_air/(2 * np.pi * self.thickness)]
-        
+
         tl_df = pd.DataFrame()
         
         for i, freq in enumerate(freq_bands):
@@ -388,8 +429,6 @@ class AbsorberPanel:
             tl_df = pd.concat([tl_df, df])
         
         return tl_df
-
-
 
 
 class MultiPanel:
@@ -466,8 +505,6 @@ class MultiPanel:
             ''' basis weight of absorber adds to the last panel'''
             self.panel_objs[-1].basis_wt = self.panel_objs[-1].basis_wt + self.absorber_objs[-1].basis_wt
 
-    
-    
     def _calculate_standing_wave_frequency(self):
         """
         Calculates standing wave frequencies for the panel absorber system
@@ -479,11 +516,15 @@ class MultiPanel:
             self.standing_wave_frequency.append(f)
         
         return self.standing_wave_frequency
-    
-    
+
     def _calculate_air_mass_resonance_frequency(self):
         """
-        Calculates air-mass-air resonance frequencies for the panel absorber system
+        Calculates the air mass resonance frequency for the panel-absorber system.
+
+        Returns
+        -------
+        float
+            The air mass resonance frequency in Hz.
         """
         
         f_amr = []
@@ -616,16 +657,16 @@ class MultiPanel:
         """
         Calculates the transmission loss of the structure for a given frequency range.
 
-        Parameters
-        ----------
-        f_min, f_max: specifying the minimum and maximum frequencies, in Hz.
+    Parameters
+    ----------
+    frequency_range : tuple or list, optional
+        A tuple or list specifying the minimum and maximum frequencies, in Hz. If not provided, the default frequency
+        range is from 20 Hz to 8000 Hz.
 
         Returns
         -------
-        freqs : numpy.ndarray
-            An array of the third-octave center frequencies within the given frequency range.
-        TLs : numpy.ndarray
-            An array of the transmission losses for each third-octave band.
+        tl_df : pandas.DataFrame
+        DataFrame containing the calculated transmission loss for each frequency band.
         """
         
         if (len(frequency_range) > 2) or (len(frequency_range) < 1):
@@ -656,13 +697,23 @@ class MultiPanel:
 
 
 class OITC:
-    
+    """
+    Class for calculating OITC (Outdoor-Indoor Transmission Class) rating.
+    """
+
     def __init__(self, tl_df):
+        """
+        Initialize the OITC object.
+
+        Args:
+            tl_df (pandas DataFrame): DataFrame containing transmission loss values.
+                                     The DataFrame should have a 'Frequency' column
+                                     and a 'Transmission_Loss' column.
+        """
         self.tl_df = tl_df
         min_freq = min(tl_df['Frequency'])
         max_freq = max(tl_df['Frequency'])
         self.freq_bands = list(ac.bands.third(min_freq, max_freq))
-        
 
     def estimate_reference_source_spectrum(self):
         """
@@ -673,7 +724,6 @@ class OITC:
         """
         ref_dB = -10.62856656 * np.log10(self.freq_bands) + 121.8467968
         ref_dB = np.round(ref_dB, 0)
-#         print(ref_dBA)
         return ref_dB
 
     def estimate_a_weighting(self):
@@ -692,8 +742,6 @@ class OITC:
         
         a_weighting = a + b * log_f13 + c * (log_f13**2) + d * (log_f13**3) + e * (log_f13**4)
         a_weighting = np.round(a_weighting, 1)
-#         print(a_weighting)
-        
         return a_weighting
 
     def rating(self):
@@ -719,25 +767,45 @@ class OITC:
 # ### Public Functions
 
 def stratified_sample_df(df, col, n_samples):
+    """
+    Stratifies the dataframe based on the given column(s) and samples a fixed number of rows from each stratum.
+
+    Args:
+        df (DataFrame): The input dataframe.
+        col (str or list): The column(s) to stratify the dataframe.
+        n_samples (int): The number of samples to be selected from each stratum.
+
+    Returns:
+        DataFrame: A stratified dataframe containing the sampled rows.
+
+    """
     n = min(n_samples, df[col].value_counts().min())
     stratified_df = df.groupby(col).apply(lambda x: x.sample(n))
     stratified_df = stratified_df.reset_index(drop=True)
-#     stratified_df.index = stratified_df.index.droplevel(0)
     return stratified_df
 
 
-
 def create_material_sampling_lists(panels_df, absorbers_df):
-    
-    #generate quantile bins for numeric stratification columns
+    """
+    Creates material sampling lists by generating quantile bins for numeric stratification columns.
+
+    Args:
+        panels_df (DataFrame): The dataframe containing panel materials.
+        absorbers_df (DataFrame): The dataframe containing absorber materials.
+
+    Returns:
+        tuple: A tuple containing the list of panel dataframes and the list of absorber dataframes.
+
+    """
+    # generate quantile bins for numeric stratification columns
     panels_df['t_bins'] = pd.qcut(panels_df['Thickness'], 5)
     panels_df['m_bins'] = pd.qcut(panels_df['ElasticModulus'], 5)
     panels_df['d_bins'] = pd.qcut(panels_df['Density'], 5)
-    
+
     absorbers_df['t_bins'] = pd.qcut(absorbers_df['Thickness'], 5)
     absorbers_df['m_bins'] = pd.qcut(absorbers_df['AirFlowResistivity'], 5)
     absorbers_df['d_bins'] = pd.qcut(absorbers_df['Density'], 5)
-    
+
     # List of panel and absorber dataframes
     panel_df_list = []
     absorber_df_list = []
@@ -745,7 +813,7 @@ def create_material_sampling_lists(panels_df, absorbers_df):
         abs_sample = stratified_sample_df(absorbers_df, ['Category', 't_bins', 'm_bins', 'd_bins'], 15)
 
         if i > 0:
-            panel_sample = stratified_sample_df(panels_df[panels_df['Category'] != 'Masonry'], 
+            panel_sample = stratified_sample_df(panels_df[panels_df['Category'] != 'Masonry'],
                                                  ['Category', 'm_bins', 'd_bins', 't_bins'], 15)
         else: #masonry only in first panel
             panel_sample = stratified_sample_df(panels_df,['Category', 'm_bins', 'd_bins', 't_bins'], 15)
@@ -754,26 +822,29 @@ def create_material_sampling_lists(panels_df, absorbers_df):
         column_names = abs_sample.columns[abs_sample.columns.str.contains("Name")]
         abs_sample = abs_sample.rename(columns={column_names[0]: "Name"})
 
-
         abs_sample.drop(columns=abs_sample.columns[abs_sample.columns.str.contains("bins")], inplace=True)
         panel_sample.drop(columns=panel_sample.columns[panel_sample.columns.str.contains("bins")], inplace=True)
 
         panel_df_list.append(panel_sample)
         absorber_df_list.append(abs_sample)
-    
+
     return panel_df_list, absorber_df_list
 
 
-
-
-
 def preset_result_columns():
+    """
+    Defines the preset columns for the result dataframe.
+
+    Returns:
+        tuple: A tuple containing the feature columns and the transmission loss columns.
+
+    """
     feature_columns = []
     panel_columns = ['Density', 'Thickness_mm', 'ElasticModulusGPa', 'PoissonRatio', 'DampingRatio']
-    absorber_columns = ['Density', 'MaterialDensity', 'Thickness_mm', 'SolidElasticModulusGPa', 
+    absorber_columns = ['Density', 'MaterialDensity', 'Thickness_mm', 'SolidElasticModulusGPa',
                         'SolidPoissonRatio', 'DampingRatio', 'AirFlowResistivity', 'Porosity', 'Tortuosity']
     for i in range(_max_panels):
-        for col_name in panel_columns: 
+        for col_name in panel_columns:
             feature_columns.append('Panel' + str(i+1) + "_" + col_name)
 
     for i in range(_max_panels):
@@ -781,28 +852,37 @@ def preset_result_columns():
             feature_columns.append('Absorber' + str(i+1) + "_" + col_name)
 
     tl_columns = ['Frequency', 'Transmission_Loss']
-    
+
     return feature_columns, tl_columns
 
 
-
-
-
 def generate_frame_structure(panel_df_list, absorber_df_list, n_panels, n_absorbers):
-    
+    """
+    Generates the frame structure dictionary with randomly selected panels and absorbers.
+
+    Args:
+        panel_df_list (list): The list of panel dataframes.
+        absorber_df_list (list): The list of absorber dataframes.
+        n_panels (int): The number of panels in the frame structure.
+        n_absorbers (int): The number of absorbers in the frame structure.
+
+    Returns:
+        list: A list containing the property dataframe and the frame structure dictionary.
+
+    """
     # Create dictionary of structure with randomly selected panels and absorbers
     frame_structure_dict = {}
     panels_dict = {}
     property_df = pd.DataFrame()
     for i in range(n_panels):
         panel_df_i = panel_df_list[i].sample().iloc[0]
-        panels_dict[f"Panel{i+1}"] = panel_df_i    #f"Panel_{i+1}"
+        panels_dict[f"Panel{i+1}"] = panel_df_i
         #add data to property dataframe
         panel_df_i = pd.DataFrame(panel_df_i).transpose()
         panel_df_i['basis_wt'] = panel_df_i['Density'].multiply(panel_df_i['Thickness'])
         panel_df_i = panel_df_i.add_prefix(f"Panel{i+1}_")
-        property_df = pd.concat([property_df, panel_df_i.reset_index(drop=True)], axis=1)    
-        
+        property_df = pd.concat([property_df, panel_df_i.reset_index(drop=True)], axis=1)
+
     absorbers_dict = {}
     for i in range(n_absorbers):
         absorber_df_i = absorber_df_list[i].sample().iloc[0]
@@ -811,33 +891,42 @@ def generate_frame_structure(panel_df_list, absorber_df_list, n_panels, n_absorb
         absorber_df_i['basis_wt'] = absorber_df_i['Density'].multiply(absorber_df_i['Thickness'])
         absorber_df_i = absorber_df_i.add_prefix(f"Absorber{i+1}_")
         property_df = pd.concat([property_df, absorber_df_i.reset_index(drop=True)], axis=1)
-        
+
     frame_structure_dict = {"panels": panels_dict, "absorbers": absorbers_dict}
-    
+
     return [property_df, frame_structure_dict]
 
 
-
-
-
 def concatenate_property_tl_dataframes(mp, tl_df, property_df, n_absorbers):
-    
-    '''concatenate property set to transmission loss dataframe'''
-    #add porosity and tortuosity to property data set
+    """
+    Concatenates the property set to the transmission loss dataframe.
+
+    Args:
+        mp (MultiPanel): The MultiPanel object representing the frame structure.
+        tl_df (DataFrame): The transmission loss dataframe.
+        property_df (DataFrame): The property dataframe.
+        n_absorbers (int): The number of absorbers in the frame structure.
+
+    Returns:
+        DataFrame: The concatenated dataframe containing property and transmission loss data.
+
+    """
+    # add porosity and tortuosity to property data set
     for i in range(n_absorbers):
         property_df[f"Absorber{i+1}_Porosity"] = np.round(mp.absorber_objs[i].porosity, 4)
         property_df[f"Absorber{i+1}_Tortuosity"] = np.round(mp.absorber_objs[i].tortuosity(), 3)
-    
+
     #convert elastic modulus from Pa to GPa - dividing by 1e9
     modulus_columns = property_df.columns[property_df.columns.str.contains("Modulus")]
     property_df[modulus_columns] = property_df[modulus_columns].apply(lambda x: np.round(x.divide(1e9), 4), axis=1)
     property_df[[c + 'GPa' for c in modulus_columns]] = property_df[modulus_columns].add_suffix('GPa')
-    
+
     #convert thickness from m to mm - multiplying by 1e3
     thickness_columns = property_df.columns[property_df.columns.str.contains("Thickness")]
-    property_df[thickness_columns] = property_df[thickness_columns]         .apply(lambda x: np.round(x.multiply(1e3), 1), axis=1)
+    property_df[thickness_columns] = property_df[thickness_columns].apply(
+        lambda x: np.round(x.multiply(1e3), 1), axis=1)
     property_df[[c + '_mm' for c in thickness_columns]] = property_df[thickness_columns].add_suffix('_mm')
-    
+
     # Repeat the values of the first row of the property DataFrame for all rows in the concatenated DataFrame
     property_row = property_df.iloc[0].values
     property_row_repeated = property_row.repeat(tl_df.shape[0])
@@ -847,14 +936,17 @@ def concatenate_property_tl_dataframes(mp, tl_df, property_df, n_absorbers):
     # Concatenate the repeated property DataFrame with the transmission loss DataFrame
     concatenated_df = pd.concat([property_repeated_df.reset_index(drop=True),
                                  tl_df.reset_index(drop=True)], axis=1)
-    
+
     return concatenated_df
 
-def main():
 
+def main():
+    """
+    The main function that executes the simulation.
+
+    """
     panels_df = pd.read_csv('Materials/panel_materials.csv', encoding="ISO-8859-1")
     absorbers_df = pd.read_csv('Materials/absorber_materials.csv', encoding="ISO-8859-1")
-
 
     # Loop 1000 to 10,000 times
     n_structures = 1000
@@ -882,7 +974,7 @@ def main():
         # Create dictionary of structure with randomly selected panels and absorbers
         property_df, structure_dict = generate_frame_structure(panel_df_list, absorber_df_list, n_panels, n_absorbers)
 
-        #create structure and calculate transmission loss
+        # create structure and calculate transmission loss
         mp = MultiPanel(structure_dict)
         tl_df = mp.combined_transmission_loss(frequency_range)
 
@@ -898,24 +990,24 @@ def main():
         # Calculate specific OITC rating for this structure
         basis_wt_columns = property_df.columns[property_df.columns.str.contains("basis_wt")]
         property_df['Total_Basis_Wt'] = property_df[basis_wt_columns].apply(lambda x: np.round(x.sum(), 2), axis=1)
-        property_df['Sp_OITC_Rating'] = property_df[['OITC_Rating', 'Total_Basis_Wt']]         .apply(lambda x: np.round(10 * np.log10(10**(0.1 * x['OITC_Rating']) / x['Total_Basis_Wt']), 1), axis=1)
+        property_df['Sp_OITC_Rating'] = property_df[['OITC_Rating', 'Total_Basis_Wt']].apply(
+            lambda x: np.round(10 * np.log10(10**(0.1 * x['OITC_Rating']) / x['Total_Basis_Wt']), 1), axis=1)
 
         OITC_df = pd.concat([OITC_df, property_df]).reset_index(drop=True).fillna(value=0)
         OITC_df = OITC_df[OITC_cols]
 
         if (i+1) % 1000 == 0:
-            STL_df.to_csv(f"Materials/STL_simulation_data_{last_write+1}_to_{i+1}.csv", index=False, chunksize=500)
-            OITC_df.to_csv(f"Materials/OITC_simulation_data_{last_write+1}_to_{i+1}.csv", index=False, chunksize=500)
-            last_write = i+1
+            STL_df.to_csv(f"Materials/STL_simulation_data_{last_write+1}_to_{i+1}.csv", index=False,
+                          chunksize=500)
+            OITC_df.to_csv(f"Materials/OITC_simulation_data_{last_write+1}_to_{i+1}.csv", index=False,
+                           chunksize=500)
+            last_write = i + 1
             OITC_df = pd.DataFrame(columns=OITC_cols)
             STL_df = pd.DataFrame(columns=STL_cols)
-            print(f"last_write = {i+1}")
+            print(f"last_write = {i + 1}")
 
-    #--------- end ------------
+    # --------- end ------------
 
 
 if __name__ == "__main__":
-  main()
-
-
-
+    main()
