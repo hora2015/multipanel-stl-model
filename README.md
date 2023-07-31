@@ -1,13 +1,13 @@
 # Multipanel Sound Transmission Loss Lumped Parameter Model
 Python code for generating large datasets for sound transmission loss in multi-panel (single, double, or triple panels) with and without absorbers
 use file stl_evaluation_multipanel.py
-(or notebook file .ipynb)
+(or notebook file .ipynb. Note that only .py file will be updated in future, not the Jupyter notebook)
 
 Example materials for panels and absorbers are in Materials folder. If you wish to provide more data, you can add that to those files. The data have been accumulated from various sources over a period of time.
 
 The equations for the model are taken from Marshall Long's Architectural Acoustics book. For absorber transmission loss, the Miki Model is used. For double and triple panel with absorbers in-between, Fahy's 1987 formula is employed. Details inside the code.
 
-OITC (Outside Inside Transmission Class) rating is expanded to calculate over user provided range vs. 50-1000 Hz as listed in ASTM E1332-10a method. 
+OITC (Outside Inside Transmission Class) rating included to calculate over user provided range vs. 50-1000 Hz as listed in ASTM E1332-10a method. 
 
 ## Bibliography:
 - Long M. Architectural acoustics. Elsevier; 2005 Dec 23.
