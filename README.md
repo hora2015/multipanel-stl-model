@@ -5,9 +5,10 @@ use file stl_evaluation_multipanel.py
 
 Example materials for panels and absorbers are in Materials folder. If you wish to provide more data, you can add that to those files. The data have been accumulated from various sources over a period of time.
 
-The equations for the model are taken from Marshall Long's Architectural Acoustics book. For absorber transmission loss, the Miki Model is used. For double and triple panel with absorbers in-between, Fahy's 1987 formula is employed. Details inside the code.
+The equations for the model are taken from Marshall Long's Architectural Acoustics book. For absorber transmission loss, the Miki Model is used. For double and triple panel with absorbers in-between, Fahy's 1987 formula is employed. Details are inside the code.
 
-OITC (Outside Inside Transmission Class) rating included to calculate over user provided range vs. 50-1000 Hz as listed in ASTM E1332-10a method. 
+OITC (Outside Inside Transmission Class) rating included to calculate over user provided range vs. 50-1000 Hz as listed in ASTM E1332-10a method.
+The code can be modified to use Sound Transmission Class (STC).
 
 ## Bibliography:
 - Long M. Architectural acoustics. Elsevier; 2005 Dec 23.
